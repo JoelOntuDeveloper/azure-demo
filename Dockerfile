@@ -1,14 +1,31 @@
-# Imagen base con Java 17
+# =========================
+# build
+# =========================
+FROM maven:3.9.6-eclipse-temurin-17 AS build
+
+WORKDIR /build
+
+# Copiamos solo lo necesario primero (mejora cache)
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Copiamos el código
+COPY src ./src
+
+# Construimos el JAR
+RUN mvn clean package -DskipTests
+
+
+# =========================
+# 2️⃣ runtime
+# =========================
 FROM eclipse-temurin:17-jdk-alpine
 
-# Directorio de trabajo
 WORKDIR /app
 
-# Copiar el jar
-COPY target/*.jar app.jar
+# Copiamos el JAR generado
+COPY --from=build /build/target/*.jar app.jar
 
-# Exponer puerto (informativo)
 EXPOSE 8080
 
-# Ejecutar la app
 ENTRYPOINT ["java","-jar","app.jar"]
